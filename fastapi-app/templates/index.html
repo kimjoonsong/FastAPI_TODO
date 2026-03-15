@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Todo List</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --card: #fffdfa;
+      --ink: #22201c;
+      --muted: #6e675f;
+      --line: #ddd4c8;
+      --accent: #c75c2c;
+      --accent-dark: #9c441d;
+      --done: #3f7d4c;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background:
+        radial-gradient(circle at top, rgba(199, 92, 44, 0.18), transparent 30%),
+        linear-gradient(180deg, #f8f4ed 0%, var(--bg) 100%);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .app {
+      width: min(100%, 720px);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: 0 18px 60px rgba(69, 47, 32, 0.12);
+      overflow: hidden;
+    }
+
+    .hero {
+      padding: 32px 32px 20px;
+      background: linear-gradient(135deg, rgba(199, 92, 44, 0.14), rgba(255, 255, 255, 0.2));
+      border-bottom: 1px solid var(--line);
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: clamp(2rem, 4vw, 2.8rem);
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .content {
+      padding: 24px 32px 32px;
+    }
+
+    .todo-form {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .todo-form input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      font-size: 1rem;
+      outline: none;
+      background: #fff;
+    }
+
+    .todo-form input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(199, 92, 44, 0.12);
+    }
+
+    .todo-form button,
+    .todo-item button {
+      border: 0;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+
+    .todo-form button {
+      padding: 14px 18px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .todo-form button:hover {
+      background: var(--accent-dark);
+    }
+
+    .status {
+      min-height: 24px;
+      margin: 0 0 16px;
+      color: var(--muted);
+    }
+
+    .todo-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 12px;
+    }
+
+    .todo-item {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 10px;
+      align-items: center;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+    }
+
+    .todo-text {
+      margin: 0;
+      word-break: break-word;
+    }
+
+    .todo-item.done .todo-text {
+      text-decoration: line-through;
+      color: var(--muted);
+    }
+
+    .todo-item .toggle-btn {
+      background: rgba(63, 125, 76, 0.12);
+      color: var(--done);
+      padding: 10px 12px;
+    }
+
+    .todo-item .delete-btn {
+      background: rgba(199, 92, 44, 0.12);
+      color: var(--accent-dark);
+      padding: 10px 12px;
+    }
+
+    .empty {
+      margin: 0;
+      padding: 20px;
+      border: 1px dashed var(--line);
+      border-radius: 14px;
+      text-align: center;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.65);
+    }
+
+    @media (max-width: 640px) {
+      .hero,
+      .content {
+        padding-inline: 20px;
+      }
+
+      .todo-form,
+      .todo-item {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="hero">
+      <h1>Todo List</h1>
+      <p>Add your student ID and name, then manage tasks from the same page.</p>
+    </section>
+
+    <section class="content">
+      <form class="todo-form" id="todo-form">
+        <input
+          id="todo-input"
+          name="todo"
+          type="text"
+          placeholder="Example: 20260001 Hong Gil-dong"
+          required
+        >
+        <button type="submit">Add To-Do</button>
+      </form>
+
+      <p class="status" id="status">Loading todos...</p>
+      <ul class="todo-list" id="todo-list"></ul>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById("todo-form");
+    const input = document.getElementById("todo-input");
+    const statusText = document.getElementById("status");
+    const todoList = document.getElementById("todo-list");
+
+    async function fetchTodos() {
+      statusText.textContent = "Loading todos...";
+
+      try {
+        const response = await fetch("/todos");
+        const todos = await response.json();
+        renderTodos(todos);
+        statusText.textContent = `${todos.length} to-do item(s)`;
+      } catch (error) {
+        statusText.textContent = "Could not load todos.";
+      }
+    }
+
+    function renderTodos(todos) {
+      todoList.innerHTML = "";
+
+      if (todos.length === 0) {
+        const emptyState = document.createElement("p");
+        emptyState.className = "empty";
+        emptyState.textContent = "No tasks yet. Add your first to-do.";
+        todoList.appendChild(emptyState);
+        return;
+      }
+
+      todos.forEach((todo) => {
+        const item = document.createElement("li");
+        item.className = `todo-item${todo.completed ? " done" : ""}`;
+
+        const text = document.createElement("p");
+        text.className = "todo-text";
+        text.textContent = todo.text;
+
+        const toggleButton = document.createElement("button");
+        toggleButton.className = "toggle-btn";
+        toggleButton.textContent = todo.completed ? "Undo" : "Done";
+        toggleButton.addEventListener("click", async () => {
+          await updateTodo(todo);
+        });
+
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "delete-btn";
+        deleteButton.textContent = "Delete";
+        deleteButton.addEventListener("click", async () => {
+          await deleteTodo(todo.id);
+        });
+
+        item.append(text, toggleButton, deleteButton);
+        todoList.appendChild(item);
+      });
+    }
+
+    async function createTodo(text) {
+      const response = await fetch("/todos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create todo.");
+      }
+    }
+
+    async function updateTodo(todo) {
+      const response = await fetch(`/todos/${todo.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: todo.id,
+          text: todo.text,
+          completed: !todo.completed
+        })
+      });
+
+      if (!response.ok) {
+        statusText.textContent = "Could not update the to-do item.";
+        return;
+      }
+
+      fetchTodos();
+    }
+
+    async function deleteTodo(todoId) {
+      const response = await fetch(`/todos/${todoId}`, {
+        method: "DELETE"
+      });
+
+      if (!response.ok) {
+        statusText.textContent = "Could not delete the to-do item.";
+        return;
+      }
+
+      fetchTodos();
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const text = input.value.trim();
+
+      if (!text) {
+        statusText.textContent = "Please enter a to-do item.";
+        return;
+      }
+
+      try {
+        await createTodo(text);
+        input.value = "";
+        statusText.textContent = "To-do item added.";
+        fetchTodos();
+      } catch (error) {
+        statusText.textContent = "Could not add the to-do item.";
+      }
+    });
+
+    fetchTodos();
+  </script>
+</body>
+</html>
