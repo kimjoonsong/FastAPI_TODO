@@ -50,7 +50,7 @@ def get_todos() -> list[dict]:
     return load_todos()
 
 
-@app.post("/todos", response_model=TodoItem, status_code=201)
+@app.post("/todos", response_model=TodoItem, status_code=201, responses={400: {"description": "Todo text is empty"}})
 def create_todo(todo: TodoCreate) -> dict:
     text = todo.text.strip()
     if not text:
@@ -64,7 +64,7 @@ def create_todo(todo: TodoCreate) -> dict:
     return new_todo
 
 
-@app.put("/todos/{todo_id}", response_model=TodoItem)
+@app.put("/todos/{todo_id}", response_model=TodoItem, responses={404: {"description": "Todo item not found"}})
 def update_todo(todo_id: int, todo: TodoItem) -> dict:
     todos = load_todos()
 
@@ -82,7 +82,7 @@ def update_todo(todo_id: int, todo: TodoItem) -> dict:
     raise HTTPException(status_code=404, detail="Todo item not found.")
 
 
-@app.delete("/todos/{todo_id}", status_code=204)
+@app.delete("/todos/{todo_id}", status_code=204, responses={404: {"description": "Todo item not found"}})
 def delete_todo(todo_id: int) -> None:
     todos = load_todos()
     filtered_todos = [todo for todo in todos if todo["id"] != todo_id]

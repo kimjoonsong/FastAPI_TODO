@@ -198,7 +198,7 @@
     </section>
   </main>
 
-  <script>
+  <script type="module">
     const form = document.getElementById("todo-form");
     const input = document.getElementById("todo-input");
     const statusText = document.getElementById("status");
@@ -213,6 +213,7 @@
         renderTodos(todos);
         statusText.textContent = `${todos.length} to-do item(s)`;
       } catch (error) {
+        console.error("Failed to fetch todos:", error);
         statusText.textContent = "Could not load todos.";
       }
     }
@@ -314,11 +315,12 @@
         statusText.textContent = "To-do item added.";
         fetchTodos();
       } catch (error) {
+        console.error("Failed to create todo:", error);
         statusText.textContent = "Could not add the to-do item.";
       }
     });
 
-    fetchTodos();
+    await fetchTodos();
   </script>
 </body>
 </html>
