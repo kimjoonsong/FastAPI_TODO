@@ -42,7 +42,7 @@ def save_todos(todos: list[dict]) -> None:
 
 @app.get("/", response_class=HTMLResponse)
 def read_index(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request, "index.html")
 
 
 @app.get("/todos", response_model=list[TodoItem])
