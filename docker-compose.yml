@@ -3,8 +3,66 @@ version: "3.7"
 services:
   fastapi-app:
     build:
-      context: ./fastapi-app       # Dockerfile이 위치한 디렉토리 경로
-      dockerfile: Dockerfile       # Dockerfile 이름 (생략 가능, 기본값은 'Dockerfile')
+      context: ./fastapi-app
+      dockerfile: Dockerfile
     container_name: FastApi-app
     ports:
       - "5001:5001"
+    networks:
+      - loadtest-net
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "7070:9090"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    networks:
+      - loadtest-net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_ANALYTICS_CHECK_FOR_UPDATES=false
+      - GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES=false
+      - GF_PLUGINS_PREINSTALL_AUTO_UPDATE=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - loadtest-net
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    ports:
+      - "7100:9100"
+    networks:
+      - loadtest-net
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - loadtest-net
+
+volumes:
+  grafana-data:
+
+networks:
+  loadtest-net:
+    driver: bridge

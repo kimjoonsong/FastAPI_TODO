@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import BaseModel
 from starlette.requests import Request
 
@@ -13,6 +14,7 @@ BASE_DIR = Path(__file__).resolve().parent
 TODO_FILE = BASE_DIR / "todo.json"
 
 app = FastAPI(title="Todo List App")
+Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 
